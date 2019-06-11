@@ -1,0 +1,16 @@
+server:
+  port: 8090
+spring:
+  freemarker:
+    suffix: .html
+  mvc:
+    static-path-pattern: /static/** #允许静态资源访问
+my-config:
+  database-type:  MySQL #允许的数据库类型
+  basePath: E:/generate #默认生成的模板位置
+  packagePrefix: com.gcg #默认的前缀包名 
+  entityPackage: entity #实体类的包名
+  daoPackage: dao #dao层包名
+  serverPackage: service #service层包名
+  serverImplPackage: service.impl #service实现类层包名
+  controllerPackage: controller #控制层包名

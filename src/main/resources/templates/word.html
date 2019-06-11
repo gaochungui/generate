@@ -1,0 +1,87 @@
+<html>
+<head>
+<title>导出表结构</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="/static/js/select2.css"/>
+<script src="/static/js/jquery-1.7.1.min.js"></script>
+<script src="/static/js/jquery.base64.js"></script>
+<script src="/static/js/vue.js"></script>
+<script src="/static/js/index.js"></script>
+<script src="/static/js/select2.full.min.js"></script>
+<style>
+table {
+	border-collapse: collapse;
+}
+
+td {
+	border: solid 1px #000000;
+	height: 20px;
+}
+
+input:-webkit-autofill {
+	-webkit-box-shadow: 0 0 0px 1000px white inset !important;
+}
+
+input {
+	margin: 5px;
+}
+</style>
+</head>
+<body>
+	<div id="tableDiv">
+		<form action="">
+			<input type="text" name="user" style="opacity:0;width: 0;margin: 0;padding: 0" />
+			<input type="password" name="pwd" style="opacity:0;width: 0;margin: 0;padding: 0"/>
+			请输入数据库信息:<br> 
+			数据库驱动类：<input id="databaseDrive" type="text" style="width: 800px" value="com.mysql.jdbc.Driver" /><br>
+			数据库连接地址：<input id="databaseUrl" type="text" style="width: 800px" value="jdbc:mysql://192.168.30.32:3306/network?useUnicode=true&characterEncoding=utf8" /><br>
+			数据库用户名：<input id="databaseUser" name="user" style="width: 800px" type="text" placeholder="请输入数据库用户名" /><br> 
+			数据库密码：<input name="pwd" id="databasePass" style="width: 800px" type="password" placeholder="请输入数据库密码"/><br> 
+			<input type="button" onclick="exportWord()" value="导出" /><br> <br>
+		</form>	
+	</div>
+	<script type="text/javascript">
+		//查询连接
+		function exportWord() {
+			var databaseDrive = $("#databaseDrive").val();
+			if (databaseDrive == "") {
+				alert("请输入驱动类");
+				return;
+			}
+			var databaseUrl = $("#databaseUrl").val();
+			if (databaseUrl == "") {
+				alert("请输入数据库连接地址");
+				return;
+			}
+			var databaseUser = $("#databaseUser").val();
+			if (databaseUser == "") {
+				alert("请输入数据库用户名");
+				return;
+			}
+			var databasePass = $("#databasePass").val();
+			if (databasePass == "") {
+				alert("请输入数据库密码");
+				return;
+			}
+			var param = {};
+			param.databaseDrive = databaseDrive;
+			param.databaseUrl = databaseUrl;
+			param.databaseUser = databaseUser;
+			param.databasePass = databasePass;
+			$.ajax({
+				url : "/exportWord",
+				type : 'post',
+				data : param,
+				dataType : "json",
+				success : function(data) {
+					if ("error" in data) {
+						alert(data.error);
+					} else {
+						alert("导出成功！");
+					}
+				}
+			})
+		}
+	</script>
+</body>
+</html>

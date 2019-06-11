@@ -1,0 +1,280 @@
+<html>
+<head>
+<title>代码生成</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="/static/js/select2.css"/>
+<script src="/static/js/jquery-1.7.1.min.js"></script>
+<script src="/static/js/jquery.base64.js"></script>
+<script src="/static/js/vue.js"></script>
+<script src="/static/js/index.js"></script>
+<script src="/static/js/select2.full.min.js"></script>
+<style>
+table {
+	border-collapse: collapse;
+}
+
+td {
+	border: solid 1px #000000;
+	height: 20px;
+}
+
+input:-webkit-autofill {
+	-webkit-box-shadow: 0 0 0px 1000px white inset !important;
+}
+
+input {
+	margin: 5px;
+}
+</style>
+</head>
+<body>
+	<div id="tableDiv">
+		<form action="">
+			<input type="text" name="user" style="opacity:0;width: 0;margin: 0;padding: 0" />
+			<input type="password" name="pwd" style="opacity:0;width: 0;margin: 0;padding: 0"/>
+			请输入数据库信息（表名为空表示查询所有）:<br> 
+			数据库驱动类：<input id="databaseDrive" type="text" style="width: 800px" value="com.mysql.jdbc.Driver" /><br>
+			数据库连接地址：<input id="databaseUrl" type="text" style="width: 800px" value="jdbc:mysql://192.168.30.32:3306/network?useUnicode=true&characterEncoding=utf8" /><br>
+			数据库用户名：<input id="databaseUser" name="user" style="width: 800px" type="text" placeholder="请输入数据库用户名" /><br> 
+			数据库密码：<input name="pwd" id="databasePass" style="width: 800px" type="password" placeholder="请输入数据库密码"/><br> 
+			<input type="button" onclick="connect()" value="连接" /><br> <br>
+			请选择表名:<select id="tableName" style="width:800px">
+							<option value="">请选择表名</option>
+							<template v-for="data in message">
+								<option :value="data.remark">{{data.tableName}}</option>
+							</template>
+					 </select>
+		</form>	
+		选择要生成的文件:
+		<input type="checkbox" id="cb_0" class="checkbox_gp0" checked="checked"/>ALL&nbsp;&nbsp;
+		<input type="checkbox" id="cb_1" class="checkbox_gp0" checked="checked"/>Entity
+		<input type="checkbox" id="cb_2" class="checkbox_gp0" checked="checked"/>Dao
+		<input type="checkbox" id="cb_3" class="checkbox_gp0" checked="checked"/>Mapper
+		<input type="checkbox" id="cb_4" class="checkbox_gp0" checked="checked"/>Service
+		<input type="checkbox" id="cb_5" class="checkbox_gp0" checked="checked"/>Controller
+		<input type="button" onclick="buildFiles()" value="生成文件"/>
+		<table id="tableInfo">
+			<tr>
+		        <td style="width:100px;">列名</td>
+		        <td style="width:100px;">是否主键</td>
+		        <td style="width:100px;">数据库类型</td>
+		        <td style="width:100px;">java属性名称</td>
+		        <td style="width:100px;">java类型</td>
+		        <td style="width:100px;">说明</td>
+		        <td style="width:50px;">是否为列表查询项</td>
+		        <td style="width:100px;">匹配方式</td>
+		        <td style="width:100px;">是否重复验证</td>
+		        <td style="width:100px;">是否非空验证(前端传参)</td>
+		    </tr>
+		     <tbody v-for="data in tableMess">
+		     	<td v-text="data.tableColumnsName"></td>
+		    	<td v-text="data.isPrimaryKey"></td>
+		        <td v-text="data.tableColumnsType"></td>
+		        <td>
+		        	<input type="text" :value="data.tableColumnsNameTf">
+		        </td>
+		        <td>
+		        	<select>
+		        		<template v-for="type in types">
+		        			<template v-if="data.tableColumnsJavaType==type.key">
+		        				<option selected="selected" :value="type.key" v-text="type.value"></option>
+		        			</template>
+		        			<template v-else>
+		        				<option :value="type.key" v-text="type.value"></option>
+		        			</template>
+		        		</template>
+		        	</select>
+		        </td>
+		        <td v-text="data.tableColumnsComment"></td>
+		        <td><input name="isListSelect" type="checkbox" /></td>
+		        <td>
+		        	<select class="matchingType">
+		        		<option value="=">  =  </option>
+		        		<option value="like">  like  </option>
+		        	</select>
+				</td>
+		        <td><input name="isValidate" type="checkbox" /></td>
+		        <td><input name="isNotEmpty" type="checkbox" /></td>
+		     </tbody>
+		</table>
+	</div>
+	<div style="position:fixed;right:0;top:0;width:400px;color:red">
+		<p>生成的文件位置：\\AFOJE-703151315\generate</p>
+		<p>用户名：administrator</p>
+		<p>密码：123</p>
+	</div>
+	<input id="keyNum" type="hidden"/>
+	<script type="text/javascript">
+		$('#databaseUser').val('');
+		var table = new Vue({
+			el : "#tableDiv",
+			data : {
+				message : [],
+				tableMess:[],
+				types:[]
+			},
+			methods:{
+			},
+			mounted(){
+				$("#tableName").change(function(){//表名改变时获取表信息
+					var name=$("#tableName  option:selected").text();//表名
+					var remark=$("#tableName  option:selected").val();//表说明
+					var param={};
+					param.databaseDrive=$("#databaseDrive").val();
+					param.databaseUrl=$("#databaseUrl").val();
+					param.databaseUser=$("#databaseUser").val();
+					param.databasePass=$("#databasePass").val();
+					if(remark!=null&&remark!=''){
+						$.ajax({//获取表信息
+							url : "/select/"+name+"/"+remark,
+							type : 'post',
+							data : param,
+							dataType : "json",
+							success : function(data) {
+								if ("error" in data) {
+									alert(data.error);
+								} else {
+									table.tableMess = data.list;
+									table.types = data.types;
+									$('#keyNum').val(data.keyNum);
+								}
+							}
+						}) 
+					}else{
+						table.tableMess = [];
+					}
+				})
+			}
+		})
+		//查询连接
+		function connect() {
+			var databaseDrive = $("#databaseDrive").val();
+			if (databaseDrive == "") {
+				alert("请输入驱动类");
+				return;
+			}
+			var databaseUrl = $("#databaseUrl").val();
+			if (databaseUrl == "") {
+				alert("请输入数据库连接地址");
+				return;
+			}
+			var databaseUser = $("#databaseUser").val();
+			if (databaseUser == "") {
+				alert("请输入数据库用户名");
+				return;
+			}
+			var databasePass = $("#databasePass").val();
+			if (databasePass == "") {
+				alert("请输入数据库密码");
+				return;
+			}
+			var tableName = $("#tableName").val();
+			var param = {};
+			param.databaseDrive = databaseDrive;
+			param.databaseUrl = databaseUrl;
+			param.databaseUser = databaseUser;
+			param.databasePass = databasePass;
+			param.tableName = tableName;
+			$.ajax({
+				url : "/connect",
+				type : 'post',
+				data : param,
+				dataType : "json",
+				success : function(data) {
+					if ("error" in data) {
+						alert(data.error);
+					} else {
+						addStorageValue();
+						table.message = data.data;
+					}
+				}
+			})
+		}
+		function addStorageValue(){//保存表单内容到sessionStorage
+			sessionStorage.setItem("databaseDrive",$("#databaseDrive").val());
+			sessionStorage.setItem("databaseUrl",$("#databaseUrl").val());
+			sessionStorage.setItem("databaseUser",$("#databaseUser").val());
+			sessionStorage.setItem("databasePass",$("#databasePass").val());
+		}
+		window.addEventListener("load", function(){//页面刷新时为表单赋值
+			var flag=0;
+			var databaseDrive=sessionStorage.getItem("databaseDrive");
+			if(databaseDrive!=null){
+				$("#databaseDrive").val(databaseDrive);flag+=1;
+			}
+			var databaseUrl=sessionStorage.getItem("databaseUrl");
+			if(databaseUrl!=null){
+				$("#databaseUrl").val(databaseUrl);flag+=1;
+			}
+			var databaseUser=sessionStorage.getItem("databaseUser");
+			if(databaseUser!=null){
+				$("#databaseUser").val(databaseUser);flag+=1;
+			}
+			var databasePass=sessionStorage.getItem("databasePass");
+			if(databasePass!=null){
+				$("#databasePass").val(databasePass);flag+=1;
+			}
+			if(flag==4){
+				connect();
+			}
+		});
+		function buildFiles(){
+		    var tableName = $("#tableName  option:selected").text();
+		    var buildParam = [];
+		    $("#tableInfo tr:gt(0)").each(function(){
+		        var columnName =  $(this).find("td:eq(0)").text();
+		        var isPrimaryKey = $(this).find("td:eq(1)").text();
+		        var sqlType=  $(this).find("td:eq(2)").text();
+		        var javaName= $(this).find("td:eq(3)").find('input').val();
+		        alert(javaName);
+		        var javaType = $(this).find("td:eq(4) :selected").val();
+		        var columnComment = $(this).find("td:eq(5)").text();
+		        var isListSelect=$(this).find("td:eq(6) input").is(":checked");
+		        var matchingType = $(this).find("td:eq(7) .matchingType").val();
+		        var isValidate=$(this).find("td:eq(8) input").is(":checked");
+		        var isNotEmpty=$(this).find("td:eq(9) input").is(":checked");
+		        
+		        var obj = {};
+		        obj.columnName = columnName;
+		        obj.isPrimaryKey = isPrimaryKey;
+		        obj.sqlType = sqlType;
+		        obj.javaName = javaName;
+		        obj.javaType = javaType;
+		        obj.columnComment = columnComment;
+		        obj.isListSelect = isListSelect;
+		        obj.matchingType = matchingType;
+		        obj.isValidate = isValidate;
+				obj.isNotEmpty=isNotEmpty;	
+		        
+		        buildParam.push(obj);
+		    });
+		    console.log(JSON.stringify(buildParam)+"**********");
+		    var buildurl="/buildFile"
+		        +"?tableName="+tableName
+		        +"&tableComment="+$("#tableName  option:selected").val()
+		        +"&keyNum="+$('#keyNum').val()
+		        +"&entity="+$("#cb_1").prop("checked")
+		        +"&dao="+$("#cb_2").prop("checked")
+		        +"&mapper="+$("#cb_3").prop("checked")
+		        +"&service="+$("#cb_4").prop("checked")
+		        +"&controller="+$("#cb_5").prop("checked")
+		        
+		    var param={};
+		    param.buildParam=JSON.stringify(buildParam);    
+		    $.ajax({
+		        url: buildurl,
+		        type:"POST",
+		       	data:param,
+		        dataType:"json",
+		        success:function(data){
+		            if("success" in data){
+		                alert("文件生成成功");
+		            }else{
+		                alert("生成失败，错误原因如下:"+data.error)
+		            }
+		        }
+		    })
+		}
+	</script>
+</body>
+</html>
